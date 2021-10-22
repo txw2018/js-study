@@ -6,6 +6,8 @@ Function.prototype.bind2 = function(context){
     var self = this
     // 获取bind2函数从第二个参数到最后一个参数
     var args = Array.prototype.slice.call(arguments, 1);
+
+    var fNOP = function () {};
     var fBound = function(){
         // 这个时候的arguments是指bind返回的函数传入的参数
         var bindArgs = Array.prototype.slice.call(arguments);
@@ -14,7 +16,8 @@ Function.prototype.bind2 = function(context){
         // 当作为普通函数时，this 指向 window，此时结果为 false，将绑定函数的 this 指向 context
         return self.apply(this instanceof fBound ? this : context,args.concat(bindArgs))
     }
-    // 修改返回函数的 prototype 为绑定函数的 prototype，实例就可以继承绑定函数的原型中的值
-    fBound.prototype = this.prototype
+    // 修改返回函数的 prototype 
+    fNOP.prototype = this.prototype;
+    fBound.prototype = new fNOP();
     return fBound
 }

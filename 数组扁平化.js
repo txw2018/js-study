@@ -5,3 +5,10 @@ let str = JSON.stringify(ary);
 ary = ary.flat(Infinity)
 //2.replace + split
 ary = str.replace(/(\[|\])/g,'').split(',')
+
+//3.递归
+function flatten(arr) {
+    return arr.reduce(function(prev, next){
+        return prev.concat(Array.isArray(next) ? flatten(next) : next)
+    }, [])
+}
