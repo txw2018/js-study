@@ -1,3 +1,15 @@
+Array.prototype.Mymap = function (callback,thisArg) {
+  var arr = [].slice.call(this)
+  var resultArr = []
+
+  for (var i = 0; i < arr.length; i++) {
+    resultArr.push(callback.call(thisArg,arr[i],i,this))
+    
+  }
+  return arr
+  
+}
+
 Array.prototype.map = function(callbackFn, thisArg) {
     // 处理数组类型异常
     if (this === null || this === undefined) {

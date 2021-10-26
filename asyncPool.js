@@ -72,3 +72,22 @@ async function asyncPool(poolLimit, array, iteratorFn) {
    const timeout = i => new Promise(resolve => setTimeout(() => resolve(i), i));
 
    const result =  asyncPool(2, [1000, 5000, 3000, 2000], timeout);
+
+   async function asyncPool2(limit,arr,fn) {
+    const res = []
+    const pending =[]
+    for (const item of arr) {
+      const p = Promise.resolve().then(() => fn(item,arr))
+      res.push(p)
+
+      if(limit <= arr.length){
+        const e = p.then(() => pending.splice(pending.indexOf(e),1))
+        pending.push(e)
+        if(pending.length >= limit){
+          await Promise.race(pending)
+        }
+      }
+      
+    }
+    return res
+   }
