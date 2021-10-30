@@ -1,11 +1,24 @@
 const inBrowser = typeof window !== 'undefined';
 
+
+let prev = Date.now();
+function fallback(fn) {
+    const curr = Date.now();
+    const ms = Math.max(0, 16 - (curr - prev));
+    const id = setTimeout(fn, ms);
+    prev = curr + ms;
+    return id;
+}
+
+const iRaf = window.requestAnimationFrame || fallback;
+const iCancel = window.cancelAnimationFrame || window.clearTimeout;
+
 function raf(fn) {
-    return window.requestAnimationFrame(fn)
+    return iRaf(fn)
 }
 
 function cancelRaf(id) {
-    window.cancelAnimationFrame(id)
+    iCancel(id)
 }
 function isSameSecond(time1, time2) {
     return Math.floor(time1 / 1000) === Math.floor(time2 / 1000);
@@ -32,10 +45,18 @@ function parseTimeData(time) {
     };
 }
 function noop() {
-    
+
+}
+const DEFAULT_OPTIONS = {
+    time: 30 * 60 * 60 * 1000,
+    autoStart: true,
+    millisecond: false,
+    changeFn: noop,
+    finishFn: noop
 }
 class CountDown {
-    constructor(time = 30 * 60 * 60 * 1000, autoStart = true, millisecond = false, changeFn = noop, finishFn = noop) {
+    constructor(options) {
+        const { time, autoStart, millisecond, changeFn, finishFn } = { ...DEFAULT_OPTIONS, ...options }
         this.remain = 0
         this.time = time
         this.autoStart = autoStart
@@ -45,6 +66,7 @@ class CountDown {
         this.reset()
     }
     start() {
+        debugger
         if (this.counting) {
             return;
         }
@@ -122,3 +144,5 @@ class CountDown {
 
 
 }
+
+

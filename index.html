@@ -17,7 +17,7 @@
             const date = parseTimeData(time)
             app.innerHTML = `${date.days}:${date.hours}:${date.minutes}:${date.seconds}`
         }
-        new CountDown(30 * 60 * 60 * 1000,true,false,change)
+        new CountDown({changeFn:change})
     </script>
 </body>
 </html>
