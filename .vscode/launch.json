@@ -11,7 +11,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\递归.js"
+            "program": "${workspaceFolder}\\promise-test.js"
         }
     ]
 }

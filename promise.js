@@ -10,6 +10,41 @@
 const  PENDING = 'PENDING'
 const  RESOLVED = 'RESOLVED'
 const  REJECTED = 'REJECTED'
+const resolvePromise = (promise2,x,resolve,reject) => {
+    //1.循环引用  自己等待自己完成  错误的实现
+    if(promise2 === x){
+        return reject(new TypeError('Chaining cycle detected for promise $<Promise>'))
+    }
+    //后续的条件要严格判断  保证代码能和别的库一起使用
+    let called;
+    if((typeof x === 'object' && x != null) || typeof x === 'function'){
+        try{
+            let then = x.then
+            if(typeof then === 'function'){ //认为是一个promise
+                then.call(x,y => {//根据promise的状态决定是成功还是失败
+                    if(called) return
+                    called = true
+                    resolvePromise(promise2,y,resolve,reject)  //递归解析的过程
+                },e => {
+                    if(called) return
+                    called = true
+                    reject(e)
+                })
+            }else{
+                resolve(x)
+            }
+
+        }catch(err){
+            if(called) return
+            called = true
+            reject(err)
+        }
+
+    }else{
+        resolve(x)
+
+    }
+}
 class Promise {
     constructor(executor) {
         this.status = PENDING
@@ -39,24 +74,74 @@ class Promise {
         }
     }
     //1，promise 成功和失败的回调的返回值  可以传递到外层的下一个then
-    //2，如果返回的值是普通值的话
+    //2，如果返回的值是普通值的话（传递到下一次的成功中）,出错的情况（一定会走到下一次的失败）可能还有promise的情况（会采用promise的状态，决定走下一次的成功还是失败）
+    //3,错误处理，如果离自己最近的then，没有错误处理，会向下找
+    //4,每次指向完promise.then方法后返回的都是一个‘新的promise’（promise一旦成功或者失败就不能修改状态）
     then(onFulfilled,onRejected){
-        if(this.status === RESOLVED){
-            onFulfilled(this.value)
-        }
-        if(this.status === REJECTED){
-            onRejected(this.reason)
-        }
-        if(this.status === PENDING){
-            this.onResolvedCallbacks.push(()=> {
-                onFulfilled(this.value)
-            })
-            this.onRjectedCallbacks.push(()=> {
-                onRejected(this.reason)
-            })
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : v => v
+        onRejected = typeof onRejected === 'function' ? onRejected : err => {throw err}
+        let promise2 = new Promise((resolve,reject) => { //为了链式调用
+            if(this.status === RESOLVED){
+                setTimeout(()=>{ //加定时器为了resolvePromise能拿到promise2
+                    try{
+                        let x = onFulfilled(this.value)
+                        resolvePromise(promise2,x,resolve,reject)
+                    }catch(err){
+                        reject(err)
+                    }
+            
+                },0)
+            }
+            if(this.status === REJECTED){
+                setTimeout(()=>{
+                    try{
+                        let x = onRejected(this.reason)
+                        resolvePromise(promise2,x,resolve,reject)
+                    }catch(err){
+                        reject(err)
 
-        }
+                    }
+        
+                },0)
+            }
+            if(this.status === PENDING){
+               
+                this.onResolvedCallbacks.push(()=> {
+                    setTimeout(()=>{
+                        try{
+                            let x = onFulfilled(this.value)
+                            resolvePromise(promise2,x,resolve,reject)
+                        }catch(err){
+                            reject(err)
+                        }
+                
+                    },0)
+                })
+                this.onRjectedCallbacks.push(()=> {
+                    setTimeout(()=>{
+                        try{
+                            let x = onRejected(this.reason)
+                            resolvePromise(promise2,x,resolve,reject)
+                        }catch(err){
+                            reject(err)
+                        }
+                      
+                    },0)
+                })
+    
+            }
+        })
+        return promise2
+     
     }
 }
 
+Promise.defer = Promise.deferred = function() {
+    let dfd = {}
+    dfd.promise = new Promise((resolve,reject) => {
+        dfd.resolve = resolve
+        dfd.reject = reject
+    })
+    return dfd
+}
 module.exports = Promise
